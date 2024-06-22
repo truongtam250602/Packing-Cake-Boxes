@@ -97,8 +97,6 @@ public class GameManager : MonoBehaviour
             PlayerPrefs.SetInt("Stars Of Level " + level, stars);
         }
 
-        Debug.Log(level +":"+stars);
-
         if(PlayerPrefs.HasKey("Level Unlocked"))
         {
             PlayerPrefs.SetInt("Level Unlocked", level + 1);

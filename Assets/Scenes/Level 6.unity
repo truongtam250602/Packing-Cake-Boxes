@@ -1320,18 +1320,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cakeObjectsSpawner:
-  - posX: 0
+  - posX: 1
     posY: 1
   candyObjectsSpawner:
   - posX: 0
-    posY: 0
+    posY: 1
   - posX: 1
     posY: 3
-  - posX: 3
+  - posX: 2
     posY: 1
   giftBoxObjectsSpawner:
-  - posX: 1
-    posY: 1
+  - posX: 0
+    posY: 2
   cakePrefab: {fileID: 5253098661961713717, guid: da5b4cd2996018e429c6708557046c62, type: 3}
   candyPrefab: {fileID: 5634316919123544208, guid: 548c6ad367999a84d8b0aeaaad510340, type: 3}
   giftBoxPrefab: {fileID: 2143881335631214476, guid: 530ab00ab7c6b2d40af7aa588784ef9f, type: 3}
@@ -2540,7 +2540,7 @@ MonoBehaviour:
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 3
+          m_IntArgument: 8
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0

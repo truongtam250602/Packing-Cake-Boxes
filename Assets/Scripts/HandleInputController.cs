@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class HandleInputController : MonoBehaviour
@@ -10,19 +11,37 @@ public class HandleInputController : MonoBehaviour
     private Vector2 _tileSize;
     private Vector2 _gridOffset;
 
-    GameObject goCake, goGiftBox;
+    List<GameObject> goCakes;
+    GameObject goGiftBox;
     void Start()
     {
-
+        goCakes = new List<GameObject>();
     }
 
     void Update()
     {
-        if(_gridArray == null)
+        if (_gridArray == null)
         {
             if (ObjectsSpawner.Instance.gridArray != null)
             {
                 _gridArray = ObjectsSpawner.Instance.gridArray;
+                for (int i = 0; i < _gridArray.GetLength(0); i++)
+                {
+                    for (int j = 0; j < _gridArray.GetLength(1); j++)
+                    {
+                        if (_gridArray[i, j] != null)
+                        {
+                            if (_gridArray[i, j].CompareTag("Cake"))
+                            {
+                                goCakes.Add(_gridArray[i, j]);
+                            }
+                            else if (_gridArray[i, j].CompareTag("GiftBox"))
+                            {
+                                goGiftBox = _gridArray[i, j];
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -36,18 +55,20 @@ public class HandleInputController : MonoBehaviour
             _gridOffset = GridMap.Instance.gridOffset;
         }
 
-        if (goCake == null && goGiftBox == null)
+        if (goCakes != null && goGiftBox != null)
         {
-            goCake = GameObject.FindGameObjectWithTag("Cake");
-            goGiftBox = GameObject.FindGameObjectWithTag("GiftBox");
+            for (int i = 0; i < goCakes.Count; i++)
+            {
+                if (goCakes[i].transform.position == goGiftBox.transform.position)
+                {
+                    DestroyCakeObject(goCakes[i]);
+                }
+            }
         }
 
-        if (goCake != null && goGiftBox != null)
+        if (goCakes.Count <= 0)
         {
-            if (goCake.transform.position == goGiftBox.transform.position)
-            {
-                GameManager.Instance.WinState();
-            }
+            GameManager.Instance.WinState();
         }
 
         if (Input.touchCount > 0)
@@ -90,6 +111,12 @@ public class HandleInputController : MonoBehaviour
         }
     }
     
+    private void DestroyCakeObject(GameObject cake)
+    {
+        goCakes.Remove(cake);
+        Destroy(cake);
+    }
+
     private void MoveObject(Vector2Int direction)
     {
         for (int i = 0; i < _gridArray.GetLength(0); i++)
@@ -98,23 +125,26 @@ public class HandleInputController : MonoBehaviour
             {
                 if (_gridArray[i, j] != null)
                 {
-                    if (_gridArray[i, j].CompareTag("Cake"))
+                    for(int k = 0; k < goCakes.Count; k++)
                     {
-                        Vector2Int coordinateCake = new Vector2Int(i, j);
-                        int distance = CaculateDistanceMoving(_gridArray[i, j], direction);
-                        Vector2Int newCoordinateCake = coordinateCake + direction * distance;
-                        Vector2 targetPosition = newCoordinateCake * _tileSize - _gridOffset;
-                        _gridArray[i, j].GetComponent<MovingObject>().targetPosition = targetPosition;
-                        SwapCoordinateObject(coordinateCake, newCoordinateCake);
+                        if (_gridArray[i, j] == goCakes[k])
+                        {
+                            Vector2Int coordinateCake = new Vector2Int(i, j);
+                            int distance = CaculateDistanceMoving(_gridArray[i, j], direction);
+                            Vector2Int newCoordinateCake = coordinateCake + direction * distance;
+                            Vector2 targetPosition = newCoordinateCake * _tileSize - _gridOffset;
+                            goCakes[k].GetComponent<MovingObject>().targetPosition = targetPosition;
+                            SwapCoordinateObject(coordinateCake, newCoordinateCake);
+                        }
                     }
 
-                    else if (_gridArray[i, j].CompareTag("GiftBox"))
+                    if (_gridArray[i, j] == goGiftBox)
                     {
                         Vector2Int coordinateGiftBox = new Vector2Int(i, j);
                         int distance = CaculateDistanceMoving(_gridArray[i, j], direction);
                         Vector2Int newCoordinateGiftBox = coordinateGiftBox + direction * distance;
                         Vector2 targetPosition = newCoordinateGiftBox * _tileSize - _gridOffset;
-                        _gridArray[i, j].GetComponent<MovingObject>().targetPosition = targetPosition;
+                        goGiftBox.GetComponent<MovingObject>().targetPosition = targetPosition;
                         SwapCoordinateObject(coordinateGiftBox, newCoordinateGiftBox);
                     }
                 }
@@ -124,6 +154,7 @@ public class HandleInputController : MonoBehaviour
 
     private void SwapCoordinateObject(Vector2Int go1Coordinate, Vector2Int go2Coordinate)
     {
+        Debug.Log(go1Coordinate + "/" + go2Coordinate);
         GameObject temp = _gridArray[go1Coordinate.x, go1Coordinate.y];
         _gridArray[go1Coordinate.x, go1Coordinate.y] = _gridArray[go2Coordinate.x, go2Coordinate.y];
         _gridArray[go2Coordinate.x, go2Coordinate.y] = temp;
@@ -138,41 +169,35 @@ public class HandleInputController : MonoBehaviour
             Vector2Int cakeCoordinate = GetElementCoordinate(go);
             if (go.TryGetComponent(out MovingObject moving))
             {
-                RaycastHit2D hitCandy, hitGiftBox;
-                if (moving.IsCandy(direction, out hitCandy))
+                if (moving.IsCandy(direction, out RaycastHit2D hitCandy))
                 {
                     Vector2Int goCandyCoordinate = GetElementCoordinate(hitCandy.collider.gameObject);
                     distance = Mathf.Abs((int)Vector2Int.Distance(cakeCoordinate, goCandyCoordinate)) - 1;
                 }
-                else if (moving.IsGiftBox(direction, out hitGiftBox))
+                else if (moving.IsGiftBox(direction, out RaycastHit2D hitGiftBox))
                 {
                     if (direction != Vector2Int.down)
                     {
                         Vector2Int newCoordinateHitGB;
-                        int distanceMovingHitGB = CaculateDistanceMoving(hitGiftBox.collider.gameObject, direction);
-                        if (distanceMovingHitGB >= 0)
-                        {
-                            newCoordinateHitGB = GetElementCoordinate(hitGiftBox.collider.gameObject)
+                        int distanceMovingHitGB = CaculateDistanceMoving(hitGiftBox.collider.gameObject, direction) - 1;
+                        newCoordinateHitGB = GetElementCoordinate(hitGiftBox.collider.gameObject)
                             + direction * distanceMovingHitGB;
-                        }
-                        else
-                        {
-                            newCoordinateHitGB = GetElementCoordinate(hitGiftBox.collider.gameObject);
-                        }
                         Vector2Int goCoordinate = GetElementCoordinate(go);
-                        if (newCoordinateHitGB.x == goCoordinate.x)
-                        {
-                            distance = newCoordinateHitGB.y - goCoordinate.y - 1;
-                        }
-                        if (newCoordinateHitGB.y == goCoordinate.y)
-                        {
-                            distance = newCoordinateHitGB.x - goCoordinate.x - 1;
-                        }
+                        distance = (int)Vector2Int.Distance(goCoordinate, newCoordinateHitGB);
                     }
                     else
                     {
                         return GetElementCoordinate(go).y - GetElementCoordinate(hitGiftBox.collider.gameObject).y;
                     }
+                }
+                else if (moving.IsCake(direction, out RaycastHit2D hitCake1))
+                {
+                    Vector2Int newCoordinateHitCake;
+                    int distanceMovingHitCake = CaculateDistanceMoving(hitCake1.collider.gameObject, direction) - 1;
+                    newCoordinateHitCake = GetElementCoordinate(hitCake1.collider.gameObject)
+                        + direction * distanceMovingHitCake;
+                    Vector2Int goCoordinate = GetElementCoordinate(go);
+                    distance = (int)Vector2Int.Distance(goCoordinate, newCoordinateHitCake);
                 }
                 else
                 {
@@ -208,41 +233,27 @@ public class HandleInputController : MonoBehaviour
             Vector2Int giftBoxCoordinate = GetElementCoordinate(go);
             if (go.TryGetComponent(out MovingObject moving))
             {
-                RaycastHit2D hitCandy, hitCake;
-                if (moving.IsCandy(direction, out hitCandy))
+                if (moving.IsCandy(direction, out RaycastHit2D hitCandy))
                 {
                     Vector2Int goCandyCoordinate = GetElementCoordinate(hitCandy.collider.gameObject);
                     distance = Mathf.Abs((int)Vector2Int.Distance(giftBoxCoordinate, goCandyCoordinate)) - 1;
                 }
-                else if (moving.IsCake(direction, out hitCake))
+                else if (moving.IsCake(direction, out RaycastHit2D hitCake2))
                 {
                     if (direction != Vector2Int.up)
                     {
                         Vector2Int newCoordinateHitCake;
-                        int distanceMovingHitCake = CaculateDistanceMoving(hitCake.collider.gameObject, direction);
-                        if (distanceMovingHitCake >= 0)
-                        {
-                            newCoordinateHitCake = GetElementCoordinate(hitCake.collider.gameObject)
+                        int distanceMovingHitCake = CaculateDistanceMoving(hitCake2.collider.gameObject, direction) - 1;
+
+                        newCoordinateHitCake = GetElementCoordinate(hitCake2.collider.gameObject)
                             + direction * distanceMovingHitCake;
-                        }
-                        else
-                        {
-                            newCoordinateHitCake = GetElementCoordinate(hitCake.collider.gameObject);
-                        }
 
                         Vector2Int goCoordinate = GetElementCoordinate(go);
-                        if (newCoordinateHitCake.x == goCoordinate.x)
-                        {
-                            distance = newCoordinateHitCake.y - goCoordinate.y - 1;
-                        }
-                        if (newCoordinateHitCake.y == goCoordinate.y)
-                        {
-                            distance = newCoordinateHitCake.x - goCoordinate.x - 1;
-                        }
+                        distance = (int)Vector2Int.Distance(goCoordinate, newCoordinateHitCake);
                     }
                     else
                     {
-                        return GetElementCoordinate(go).y - GetElementCoordinate(hitCake.collider.gameObject).y;
+                        return GetElementCoordinate(go).y - GetElementCoordinate(hitCake2.collider.gameObject).y;
                     }
                 }
                 else
