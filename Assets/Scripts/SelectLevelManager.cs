@@ -26,6 +26,7 @@ public class SelectLevelManager : MonoBehaviour
             {
                 levelButtons[i].transform.GetChild(0).gameObject.SetActive(true); // TMP
                 levelButtons[i].transform.GetChild(1).gameObject.SetActive(false); // Image
+                levelButtons[i].GetComponent<Button>().enabled = true;
                 int stars = PlayerPrefs.HasKey("Stars Of Level " + i) ? PlayerPrefs.GetInt("Stars Of Level " + i) : 0;
                 LoadHighScore(stars, levelButtons[i].transform.GetChild(2));
             }
@@ -33,6 +34,7 @@ public class SelectLevelManager : MonoBehaviour
             {
                 levelButtons[i].transform.GetChild(0).gameObject.SetActive(false);
                 levelButtons[i].transform.GetChild(1).gameObject.SetActive(true);
+                levelButtons[i].GetComponent<Button>().enabled = false;
             }
         }
     }
